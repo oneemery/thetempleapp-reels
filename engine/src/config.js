@@ -2,7 +2,7 @@ if (location.search.includes("full")) window.RES_OVERRIDE = 1;
 window.FELT = true;
 window.RES = window.RES_OVERRIDE || 0.5;
 // config.js: project settings.
-//   duration: 123.431the video's length in seconds.
+//   duration: 87.626the video's length in seconds.
 //   bpm:      the rhythm that bounces, dances and pulse() follow. Clawd always moves to some beat; if the video has music,
 //             set this to the song's tempo, and set offset to the time in seconds of its first downbeat.
-const PROJECT = { duration: 123.431, bpm: 80, offset: 0 };
+const PROJECT = { duration: 87.626, bpm: 80, offset: 0 };
