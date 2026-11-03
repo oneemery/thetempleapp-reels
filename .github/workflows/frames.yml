@@ -1,0 +1,60 @@
+name: frames
+# Public render farm for The Temple App reels. Renders the picture only (no audio lives here).
+# Push a change to RENDER (first line = episode name) and this renders on 5 machines,
+# stitches a silent MP4 and attaches it to a release named frames-<episode>.
+on:
+  push:
+    branches: [frames]
+    paths: [RENDER]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  frames:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: install engine
+        run: cd engine && npm ci --no-audit --no-fund
+      - name: render slice
+        run: |
+          cd engine
+          DUR=$(node -e "const s=require('fs').readFileSync('src/config.js','utf8');console.log(s.match(/duration:\s*([\d.]+)/)[1])")
+          if [ -f slices.txt ] && [ $(wc -l < slices.txt) -ge 5 ]; then read A B < <(sed -n "$(( ${{ matrix.shard }} + 1 ))p" slices.txt); else
+          read A B < <(python3 -c "import math;F=math.ceil($DUR*12);N=5;i=${{ matrix.shard }};print((i*F//N)/12,((i+1)*F//N)/12)"); fi
+          echo "slice ${{ matrix.shard }}: $A to $B s"
+          for try in 1 2 3 4; do
+            node render.mjs --soft-gl --frames --fps=12 --workers=1 --range=$A:$B --chrome=$(which google-chrome || which chromium) > log.txt 2>&1 || true
+            grep -E "to render|rror" log.txt | head -5
+            grep -q "rror" log.txt || break
+          done
+          ls out/frames | wc -l
+      - uses: actions/upload-artifact@v4
+        with: { name: 'frames-${{ matrix.shard }}', path: engine/out/frames, retention-days: 1 }
+  stitch:
+    needs: frames
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { pattern: 'frames-*', path: frames, merge-multiple: true }
+      - name: silent mp4
+        run: |
+          sudo apt-get -qq update && sudo apt-get -qq install -y ffmpeg > /dev/null
+          EP=$(head -1 RENDER | tr -d '[:space:]')
+          echo "EP=$EP" >> $GITHUB_ENV
+          ls frames | wc -l
+          ffmpeg -y -loglevel error -framerate 12 -i frames/f%05d.jpg -vf "fps=24,format=yuv420p" -c:v libx264 -preset veryfast -crf 20 -movflags +faststart "$EP-silent.mp4"
+      - name: attach to release
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          TAG="frames-$EP"
+          gh release delete "$TAG" -y --cleanup-tag -R ${{ github.repository }} 2>/dev/null || true
+          gh release create "$TAG" "$EP-silent.mp4" --target frames -t "$TAG" -n "silent render of $EP" -R ${{ github.repository }}
