@@ -34,8 +34,7 @@ if ENGINE == 'cycles':
         except Exception: pass
     sc.render.engine = 'CYCLES'; sc.cycles.device = 'GPU'
     sc.cycles.samples = 8 if os.environ.get('TEST') else 32; sc.cycles.use_denoising = True
-    try: sc.cycles.denoiser = 'OPTIX'
-    except Exception: pass
+    sc.cycles.denoiser = 'OPENIMAGEDENOISE'
     if os.environ.get('TEST'): sc.cycles.device = 'CPU'
     sc.cycles.max_bounces = 4; sc.cycles.volume_bounces = 0; sc.cycles.volume_step_rate = 6
 else:
