@@ -24,6 +24,6 @@ case "$MODE" in
     pip -q install playwright && python -m playwright install --with-deps chromium > /dev/null 2>&1
     python composite.py ;;
   encode)  # encode SHOT -> /content/out/SHOT.mp4
-    ffmpeg -v error -y -framerate 30 -i /content/out/$1/f%04d.jpg -c:v libx264 -preset slow -crf 14 -pix_fmt yuv420p /content/out/$1.mp4 && ls -la /content/out/$1.mp4 ;;
+    ffmpeg -v error -y -framerate 30 -i /content/out/$1/f%04d.jpg -vf scale=1080:1920:flags=lanczos -c:v libx264 -preset slow -crf 14 -pix_fmt yuv420p /content/out/$1.mp4 && ls -la /content/out/$1.mp4 ;;
 esac
 echo DONE $MODE

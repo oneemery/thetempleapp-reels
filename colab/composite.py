@@ -19,7 +19,7 @@ with sync_playwright() as p:
     t0 = time.time()
     for si, (shot, ts, n) in enumerate(SECTIONS):
         for f in range(1, n + 1):
-            bg = Image.open(f'{OUT}/{shot}/f{f:04d}.jpg').convert('RGBA')
+            bg = Image.open(f'{OUT}/{shot}/f{f:04d}.jpg').convert('RGB').resize((1080, 1920), Image.LANCZOS).convert('RGBA')
             d = pg.evaluate(f'overlayAt({ts + (f - 1) / 30})')
             ov = Image.open(io.BytesIO(base64.b64decode(d.split(',')[1]))).convert('RGBA')
             im = Image.alpha_composite(bg, ov).convert('RGB')

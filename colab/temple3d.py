@@ -20,6 +20,7 @@ sc.render.fps = 30; sc.frame_start, sc.frame_end = 1, LEN
 sc.view_settings.view_transform = 'AgX'
 try: sc.view_settings.look = 'AgX - Punchy'
 except Exception: pass
+sc.render.resolution_percentage = 75
 if os.environ.get('TEST'): sc.render.resolution_percentage = 15
 sc.render.image_settings.file_format = 'JPEG'; sc.render.image_settings.quality = 95
 
@@ -91,7 +92,7 @@ def sprite_plane(png, height, loc, name):
     o.data.materials.append(m)
     return o
 
-def profile_layer(name, y, z0, amp, col, seed, width=60, thick=0.25, base=-6):
+def profile_layer(name, y, z0, amp, col, seed, width=60, thick=0.25, base=-30):
     """A flat felt cut-out hill layer (extruded silhouette), like a paper diorama."""
     r = random.Random(seed); ph = [r.uniform(0, 6.28) for _ in range(3)]
     pts = []
@@ -194,6 +195,29 @@ def camera(path, look, lens=35, fstop=2.2, focus=None, ease=True):
         cam.data.dof.use_dof = True; cam.data.dof.focus_object = focus; cam.data.dof.aperture_fstop = fstop
     return cam, tgt
 
+def peak(y, col):
+    r = random.Random(4); n = 160; width = 70; pts = []
+    for i in range(n + 1):
+        x = -width / 2 + width * i / n
+        zz = 0.35 * math.exp(-(x / 5.0) ** 2) * 1.0 - 2.6 * (1 - math.exp(-(x / 7.5) ** 2)) + 0.12 * math.sin(x * 1.7 + 1) + 0.08 * math.sin(x * 4.1)
+        pts.append((x, zz))
+    verts = [(x, 0, z) for x, z in pts] + [(width / 2, 0, -30), (-width / 2, 0, -30)]
+    me = bpy.data.meshes.new('golgotha'); me.from_pydata(verts, [], [list(range(len(verts)))]); me.update()
+    o = bpy.data.objects.new('golgotha', me); sc.collection.objects.link(o); o.location.y = y
+    so = o.modifiers.new('thick', 'SOLIDIFY'); so.thickness = 3.0; so.offset = 0
+    bv = o.modifiers.new('bevel', 'BEVEL'); bv.width = 0.12; bv.segments = 4; bv.limit_method = 'ANGLE'
+    o.data.materials.append(felt('golgotha', col)); return o
+
+def fog_box(density=0.02):
+    bpy.ops.mesh.primitive_cube_add(location=(0, 14, 7)); b = bpy.context.object; b.name = 'fog'; b.scale = (26, 26, 11)
+    m = bpy.data.materials.new('fog'); m.use_nodes = True; nt = m.node_tree
+    nt.nodes.remove(nt.nodes['Principled BSDF'])
+    v = nt.nodes.new('ShaderNodeVolumePrincipled'); v.inputs['Density'].default_value = density
+    v.inputs['Color'].default_value = (1, 0.9, 0.8, 1); v.inputs['Anisotropy'].default_value = 0.65
+    nt.links.new(v.outputs['Volume'], nt.nodes['Material Output'].inputs['Volume'])
+    b.data.materials.append(m); b.visible_shadow = False
+    return b
+
 def golgotha_set(sun_z, sky_cols):
     sky, sky_e, ramp = sky_backdrop(70, sky_cols)
     stars(140, 68, 14, 40)
@@ -202,7 +226,9 @@ def golgotha_set(sun_z, sky_cols):
     lays = [(46, 2.6, 4.2, (0.16, 0.08, 0.24), 3), (34, 2.0, 3.4, (0.12, 0.055, 0.2), 5), (22, 1.0, 2.6, (0.09, 0.04, 0.16), 8), (12, -0.4, 1.8, (0.065, 0.03, 0.12), 11)]
     for i, (y, z0, amp, col, seed) in enumerate(lays):
         profile_layer(f'hills{i}', y, z0, amp, col, seed, width=110 if y > 30 else 80)
-    hill = hill_mound(0, 0, -7.0, 9, 6, 7.4, (0.13, 0.06, 0.2), 'golgotha')
+    peak(0, (0.13, 0.06, 0.2))
+    profile_layer('ledge', -7, -2.2, 0.5, (0.035, 0.015, 0.06), 21, width=60)
+    fog_box()
     cr = cross((0, 0, 0.3))
     # rim sun light from behind + cool fill from the front
     bpy.ops.object.light_add(type='SUN', location=(0, 40, 10)); s = bpy.context.object
@@ -215,23 +241,23 @@ def golgotha_set(sun_z, sky_cols):
 
 # ---------------- shots ----------------
 if SHOT == 'golgotha':
-    vol = world((0.02, 0.008, 0.04), 1.0, 0.018)
+    vol = world((0.02, 0.008, 0.04), 1.0, 0)
     S = golgotha_set(1.2, [(0.95, 0.45, 0.35), (0.45, 0.14, 0.38), (0.05, 0.02, 0.12)])
     dust(160, ((-6, 6), (-6, 4), (0, 6)))
     # "AM" in gold rises in front of the cross when the voice says it (t = 7.4s)
-    am = text3d('AM', 1.6, (0, -3.2, 5.2), gold('gold', 2.5), 'AM')
+    am = text3d('AM', 1.6, (0, -3.2, 5.2), gold('gold', 0.6), 'AM')
     am.scale = (0.001, 0.001, 0.001); am.keyframe_insert('scale', frame=1); am.keyframe_insert('scale', frame=268)
     am.scale = (1, 1, 1); am.keyframe_insert('scale', frame=280)
-    camera([(1, (2.5, -34, 1.2)), (200, (0.6, -17, 2.6)), (LEN, (0, -12.5, 3.4))],
+    camera([(1, (2.5, -30, 2.4)), (200, (0.6, -16, 2.8)), (LEN, (0, -12.0, 3.3))],
            [(1, (0, 0, 2.2)), (LEN, (0, 0, 3.4))], lens=38, fstop=2.0, focus=S['cross'][0])
 elif SHOT == 'walls':
-    world((0.01, 0.006, 0.02), 1.0, 0.03)
+    world((0.01, 0.006, 0.02), 1.0, 0)
     floor = bpy.ops.mesh.primitive_plane_add(size=40, location=(0, 0, 0)); bpy.context.object.data.materials.append(felt('floor', (0.05, 0.028, 0.07), bump=0.6))
     def brick_wall(name, x):
         bpy.ops.mesh.primitive_cube_add(location=(x, 2, 3)); o = bpy.context.object; o.name = name; o.scale = (0.4, 9, 3)
-        m = felt(name, (0.16, 0.09, 0.2), bump=0.5); nt = m.node_tree; b = nt.nodes['Principled BSDF']
+        m = felt(name, (0.3, 0.17, 0.36), bump=0.5); nt = m.node_tree; b = nt.nodes['Principled BSDF']
         br = nt.nodes.new('ShaderNodeTexBrick'); br.inputs['Scale'].default_value = 3.2
-        br.inputs['Color1'].default_value = (0.17, 0.09, 0.2, 1); br.inputs['Color2'].default_value = (0.12, 0.065, 0.15, 1); br.inputs['Mortar'].default_value = (0.05, 0.03, 0.07, 1)
+        br.inputs['Color1'].default_value = (0.3, 0.17, 0.36, 1); br.inputs['Color2'].default_value = (0.22, 0.12, 0.27, 1); br.inputs['Mortar'].default_value = (0.05, 0.03, 0.07, 1)
         br.inputs['Mortar Size'].default_value = 0.03
         tc = nt.nodes.new('ShaderNodeTexCoord'); nt.links.new(tc.outputs['Object'], br.inputs['Vector'])
         nt.links.new(br.outputs['Color'], b.inputs['Base Color'])
@@ -247,9 +273,10 @@ elif SHOT == 'walls':
         o.location.x = s * 1.35; o.keyframe_insert('location', index=0, frame=200)
         o.location.x = s * 1.2; o.keyframe_insert('location', index=0, frame=LEN)
     man = sprite_plane('p2.png', 1.75, (0, 0, 0), 'man')
+    fb = fog_box(0.035); fb.location = (0, 1, 4); fb.scale = (6, 8, 4.5)
     # light from above: warm shaft that dies when "heaven went quiet" (t=5.9s -> f177..f230)
     bpy.ops.object.light_add(type='SPOT', location=(0, -0.5, 9)); sp = bpy.context.object
-    sp.data.spot_size = math.radians(38); sp.data.spot_blend = 0.4; sp.data.color = (1.0, 0.78, 0.5); sp.data.shadow_soft_size = 0.4
+    sp.data.spot_size = math.radians(60); sp.data.spot_blend = 0.4; sp.data.color = (1.0, 0.78, 0.5); sp.data.shadow_soft_size = 0.4
     sp.data.energy = 1500; sp.data.keyframe_insert('energy', frame=1); sp.data.keyframe_insert('energy', frame=225)
     sp.data.energy = 30; sp.data.keyframe_insert('energy', frame=275)
     bpy.ops.object.light_add(type='AREA', location=(0, -8, 3)); cool = bpy.context.object; cool.rotation_euler = (math.radians(80), 0, 0)
@@ -258,7 +285,7 @@ elif SHOT == 'walls':
     dust(70, ((-2.5, 2.5), (-2, 2), (0.3, 6)), drift=(0, 0, -0.12))
     camera([(1, (0, -11, 1.6)), (LEN, (0, -6.2, 1.25))], [(1, (0, 0, 1.4)), (LEN, (0, 0, 1.1))], lens=32, fstop=2.4, focus=man)
 elif SHOT == 'rise':
-    vol = world((0.02, 0.01, 0.04), 1.0, 0.02)
+    vol = world((0.02, 0.01, 0.04), 1.0, 0)
     S = golgotha_set(-4.0, [(0.95, 0.45, 0.35), (0.45, 0.14, 0.38), (0.05, 0.02, 0.12)])
     # sun rises behind the cross; sky warms from violet to gold on "resurrection" (t=9.0s -> f270)
     sun = S['sun']
@@ -275,7 +302,7 @@ elif SHOT == 'rise':
     sl.rotation_euler = (math.radians(-100), 0, math.radians(180)); sl.keyframe_insert('rotation_euler', frame=200)
     sl.rotation_euler = (math.radians(-86), 0, math.radians(180)); sl.keyframe_insert('rotation_euler', frame=320)
     dust(200, ((-7, 7), (-6, 4), (0, 7)))
-    camera([(1, (1.2, -7.5, 0.9)), (220, (0.6, -11, 2.0)), (LEN, (0, -18, 4.2))],
+    camera([(1, (1.2, -6.0, 0.9)), (220, (0.6, -11, 2.0)), (LEN, (0, -18, 4.2))],
            [(1, (0, 0, 3.4)), (LEN, (0, 0, 3.0))], lens=34, fstop=2.8, focus=S['cross'][0])
 
 # render
