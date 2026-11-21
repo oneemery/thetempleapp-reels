@@ -13,11 +13,11 @@ python -c "import bpy" 2>/dev/null || pip -q install bpy==5.3.0
 cd /content/temple
 case "$MODE" in
   speed)
-    for E in eevee cycles; do OUTDIR=/content/test_$E python temple3d.py golgotha $E 290 290 2>&1 | grep -E "AVG|Error|Traceback" | sed "s/^/$E /"; done ;;
+    for E in eevee cycles; do OUTDIR=/content/test_$E python temple3d.py golgotha $E 290 290 2>&1 | grep --line-buffered -E "AVG|Error|Traceback" | sed "s/^/$E /"; done ;;
   render)  # render SHOT ENGINE [first last step]
-    python temple3d.py "$@" 2>&1 | grep -E "frame [0-9]*0 |AVG|Error|Traceback" ;;
+    python temple3d.py "$@" 2>&1 | grep --line-buffered -E "frame [0-9]*0 |AVG|Error|Traceback" ;;
   all)  # render every shot, then composite
-    for S in golgotha walls rise; do python temple3d.py $S ${1:-cycles} 2>&1 | grep -E "frame [0-9]*00 |AVG|Error|Traceback"; done
+    for S in golgotha walls rise; do python temple3d.py $S ${1:-cycles} 2>&1 | grep --line-buffered -E "frame [0-9]*00 |AVG|Error|Traceback"; done
     pip -q install playwright && python -m playwright install --with-deps chromium > /dev/null 2>&1
     python composite.py ;;
   composite)
