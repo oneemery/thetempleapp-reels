@@ -221,8 +221,8 @@ if SHOT == 'golgotha':
     dust(160, ((-6, 6), (-6, 4), (0, 6)))
     # "AM" in gold rises in front of the cross when the voice says it (t = 7.4s)
     am = text3d('AM', 1.6, (0, -3.2, 5.2), gold('gold', 2.5), 'AM')
-    am.scale = (0.001, 0.001, 0.001); am.keyframe_insert('scale', frame=1); am.keyframe_insert('scale', frame=228)
-    am.scale = (1, 1, 1); am.keyframe_insert('scale', frame=240)
+    am.scale = (0.001, 0.001, 0.001); am.keyframe_insert('scale', frame=1); am.keyframe_insert('scale', frame=268)
+    am.scale = (1, 1, 1); am.keyframe_insert('scale', frame=280)
     camera([(1, (2.5, -34, 1.2)), (200, (0.6, -17, 2.6)), (LEN, (0, -12.5, 3.4))],
            [(1, (0, 0, 2.2)), (LEN, (0, 0, 3.4))], lens=38, fstop=2.0, focus=S['cross'][0])
 elif SHOT == 'walls':
@@ -244,18 +244,18 @@ elif SHOT == 'walls':
     # walls start drifting in, then close fast on "walls closing in" (t=3.35s -> f100)
     for o, s in ((L_, -1), (R_, 1)):
         o.location.x = s * 5.5; o.keyframe_insert('location', index=0, frame=1)
-        o.location.x = s * 4.6; o.keyframe_insert('location', index=0, frame=100)
-        o.location.x = s * 1.35; o.keyframe_insert('location', index=0, frame=175)
+        o.location.x = s * 4.6; o.keyframe_insert('location', index=0, frame=125)
+        o.location.x = s * 1.35; o.keyframe_insert('location', index=0, frame=200)
         o.location.x = s * 1.2; o.keyframe_insert('location', index=0, frame=LEN)
     man = sprite_plane('p2.png', 1.75, (0, 0, 0), 'man')
     # light from above: warm shaft that dies when "heaven went quiet" (t=5.9s -> f177..f230)
     bpy.ops.object.light_add(type='SPOT', location=(0, -0.5, 9)); sp = bpy.context.object
     sp.data.spot_size = math.radians(38); sp.data.spot_blend = 0.4; sp.data.color = (1.0, 0.78, 0.5); sp.data.shadow_soft_size = 0.4
-    sp.data.energy = 1500; sp.data.keyframe_insert('energy', frame=1); sp.data.keyframe_insert('energy', frame=180)
-    sp.data.energy = 30; sp.data.keyframe_insert('energy', frame=235)
+    sp.data.energy = 1500; sp.data.keyframe_insert('energy', frame=1); sp.data.keyframe_insert('energy', frame=225)
+    sp.data.energy = 30; sp.data.keyframe_insert('energy', frame=275)
     bpy.ops.object.light_add(type='AREA', location=(0, -8, 3)); cool = bpy.context.object; cool.rotation_euler = (math.radians(80), 0, 0)
     cool.data.color = (0.45, 0.5, 1.0); cool.data.size = 6
-    cool.data.energy = 80; cool.data.keyframe_insert('energy', frame=180); cool.data.energy = 650; cool.data.keyframe_insert('energy', frame=235)
+    cool.data.energy = 80; cool.data.keyframe_insert('energy', frame=225); cool.data.energy = 650; cool.data.keyframe_insert('energy', frame=275)
     dust(70, ((-2.5, 2.5), (-2, 2), (0.3, 6)), drift=(0, 0, -0.12))
     camera([(1, (0, -11, 1.6)), (LEN, (0, -6.2, 1.25))], [(1, (0, 0, 1.4)), (LEN, (0, 0, 1.1))], lens=32, fstop=2.4, focus=man)
 elif SHOT == 'rise':
