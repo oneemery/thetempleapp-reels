@@ -16,6 +16,11 @@ case "$MODE" in
     for E in eevee cycles; do OUTDIR=/content/test_$E python temple3d.py golgotha $E 290 290 2>&1 | grep --line-buffered -E "AVG|Error|Traceback" | sed "s/^/$E /"; done ;;
   render)  # render SHOT ENGINE [first last step]
     python temple3d.py "$@" 2>&1 | grep --line-buffered -E "frame [0-9]*0 |AVG|Error|Traceback" ;;
+  fast)  # 3D plates once, then the live engine renders the reel
+    python plates.py /content/temple/live/cross-part3/p 2>&1 | grep --line-buffered -E "plate|PLATES|Error|Traceback"
+    python -c "import playwright" 2>/dev/null || pip -q install playwright
+    python -m playwright install --with-deps chromium > /dev/null 2>&1
+    python final3d.py ;;
   all)  # render every shot, then composite
     for S in golgotha walls rise; do python temple3d.py $S ${1:-cycles} 2>&1 | grep --line-buffered -E "frame [0-9]*00 |AVG|Error|Traceback"; done
     pip -q install playwright && python -m playwright install --with-deps chromium > /dev/null 2>&1

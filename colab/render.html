@@ -3,7 +3,7 @@
 <script>
 const q = new URLSearchParams(location.search);
 const eng = new TempleEngine(document.getElementById('c'), { scale: +(q.get('scale') || 1), full: q.get('full') !== '0' });
-window.ready = eng.load(q.get('base')).then(() => true);
+window.ready = eng.load(q.get('base'), null, q.get('scene') || 'scene.json').then(() => true);
 const SKIP = new Set(['cross','cross (small)','left wall','right wall','sun','crowd person','crowd person (glow)','image','AM']);
 window.overlayAt = t => { eng.overlay(t, e => !SKIP.has(e.label)); return eng.c.toDataURL('image/png'); };
 window.drawAt = t => { eng.frame(t); return eng.c.toDataURL('image/jpeg', +(q.get('q') || 0.95)); };

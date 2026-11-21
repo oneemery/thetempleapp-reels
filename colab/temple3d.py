@@ -204,7 +204,7 @@ def peak(y, col):
     verts = [(x, 0, z) for x, z in pts] + [(width / 2, 0, -30), (-width / 2, 0, -30)]
     me = bpy.data.meshes.new('golgotha'); me.from_pydata(verts, [], [list(range(len(verts)))]); me.update()
     o = bpy.data.objects.new('golgotha', me); sc.collection.objects.link(o); o.location.y = y
-    so = o.modifiers.new('thick', 'SOLIDIFY'); so.thickness = 3.0; so.offset = 0
+    so = o.modifiers.new('thick', 'SOLIDIFY'); so.thickness = 0.3; so.offset = 0
     bv = o.modifiers.new('bevel', 'BEVEL'); bv.width = 0.12; bv.segments = 4; bv.limit_method = 'ANGLE'
     o.data.materials.append(felt('golgotha', col)); return o
 

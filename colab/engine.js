@@ -17,8 +17,8 @@
     this.c = canvas; this.k = opts.scale || 0.5; this.full = !!opts.full;
     this.S = null; this.ov = {}; this.boxes = [];
   }
-  Engine.prototype.load = async function (base, onProgress) {
-    const S = this.S = await (await fetch(base + 'scene.json', { cache: 'no-store' })).json();
+  Engine.prototype.load = async function (base, onProgress, sceneFile) {
+    const S = this.S = await (await fetch(base + (sceneFile || 'scene.json'), { cache: 'no-store' })).json();
     this.W = S.W; this.H = S.H;
     const files = [];
     let done = 0; const tick = () => { done++; onProgress && onProgress(done / files.length); };
@@ -74,7 +74,7 @@
   };
   Engine.prototype.drawEl = function (ctx, e, t, key) {
     const ov = this.ov[key] || {};
-    if (ov.hide) return null;
+    if (ov.hide || e.skip) return null;
     const dt = ov.dt || 0, t0 = e.t0 + dt, t1 = e.t1 + dt;
     if (t < t0 || t > t1 + e.fout) return null;
     const p = e.fade > 0 ? ease((t - t0) / e.fade) : 1;
@@ -159,12 +159,34 @@
     return { x: x - fx + bx, y: G + bob - fy + by, w: 360 * sc, h: 600 * sc };
   };
   // draw the frame at time t. returns hit boxes (top-most last)
+  const smooth = x => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+  function lerpKeys(keys, t) { // [[t, v1, v2...], ...] smooth between keys
+    if (!keys || !keys.length) return null;
+    if (t <= keys[0][0]) return keys[0].slice(1);
+    for (let i = 0; i < keys.length - 1; i++) { const a = keys[i], b = keys[i + 1]; if (t < b[0]) { const p = smooth((t - a[0]) / Math.max(0.001, b[0] - a[0])); return a.slice(1).map((v, j) => v + (b[j + 1] - v) * p); } }
+    return keys[keys.length - 1].slice(1);
+  }
+  Engine.prototype.drawPlates = function (ctx, t) {
+    const S = this.S; if (!S.plates) return;
+    for (const P of S.plates) {
+      if (t < P.t0 || t > P.t1) continue;
+      const [zoom, px, py] = lerpKeys(P.cam, t);
+      let a = P.akeys ? lerpKeys(P.akeys, t)[0] : 1;
+      a *= smooth((t - P.t0) / 0.35) * smooth((P.t1 - t) / 0.35);
+      if (a <= 0.01) continue;
+      const off = P.off ? lerpKeys(P.off, t) : [0, 0];
+      const sp = S.sprites[P.img], s = P.s0 * (1 + zoom * P.d);
+      const x = 540 + px * P.d + off[0] - sp[1] * s / 2, y = 960 + py * P.d + off[1] - sp[2] * s / 2;
+      ctx.globalAlpha = Math.min(1, a); this.sprite(ctx, P.img, x, y, s); ctx.globalAlpha = 1;
+    }
+  };
   Engine.prototype.frame = function (t) {
     const S = this.S, k = this.k, W = this.W, H = this.H, boxes = [];
     const sc = this.scene.getContext('2d'); sc.setTransform(k, 0, 0, k, 0, 0);
     this.drawBg(sc, t);
     S.back.forEach((e, i) => this.drawEl(sc, e, t, 'back:' + i));
     S.actors.forEach((A, i) => { const b = this.drawActor(sc, A, t, 'actor:' + i); if (b) boxes.push({ key: 'actor:' + i, kind: 'actor', ref: A, box: b }); });
+    this.drawPlates(sc, t);
     const ctx = this.c.getContext('2d'); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
     let zoomed = false;
     for (const [s0, s1] of S.stages) {
