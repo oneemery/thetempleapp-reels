@@ -1,0 +1,10 @@
+<!DOCTYPE html><html><body style="margin:0;background:#000"><canvas id="c"></canvas>
+<script src="engine.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const eng = new TempleEngine(document.getElementById('c'), { scale: +(q.get('scale') || 1), full: q.get('full') !== '0' });
+window.ready = eng.load(q.get('base')).then(() => true);
+const SKIP = new Set(['cross','cross (small)','left wall','right wall','sun','crowd person','crowd person (glow)','image','AM']);
+window.overlayAt = t => { eng.overlay(t, e => !SKIP.has(e.label)); return eng.c.toDataURL('image/png'); };
+window.drawAt = t => { eng.frame(t); return eng.c.toDataURL('image/jpeg', +(q.get('q') || 0.95)); };
+</script></body></html>
