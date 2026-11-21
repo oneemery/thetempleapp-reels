@@ -92,7 +92,7 @@ def sprite_plane(png, height, loc, name):
     o.data.materials.append(m)
     return o
 
-def profile_layer(name, y, z0, amp, col, seed, width=60, thick=0.25, base=-30):
+def profile_layer(name, y, z0, amp, col, seed, width=60, thick=0.08, base=-30):
     """A flat felt cut-out hill layer (extruded silhouette), like a paper diorama."""
     r = random.Random(seed); ph = [r.uniform(0, 6.28) for _ in range(3)]
     pts = []
@@ -107,6 +107,7 @@ def profile_layer(name, y, z0, amp, col, seed, width=60, thick=0.25, base=-30):
     so = o.modifiers.new('thick', 'SOLIDIFY'); so.thickness = thick; so.offset = 0
     bv = o.modifiers.new('bevel', 'BEVEL'); bv.width = 0.05; bv.segments = 3; bv.limit_method = 'ANGLE'
     o.data.materials.append(felt(name, col))
+    o.visible_shadow = False
     return o, pts
 
 def hill_mound(x, y, z, sx, sy, sz, col, name):
@@ -120,7 +121,7 @@ def cross(loc, s=1.0):
     parts = []
     for (dx, dz, sx, sz) in ((0, 2.25, 0.17, 2.25), (0, 3.35, 1.2, 0.16)):
         bpy.ops.mesh.primitive_cube_add(location=(loc[0] + dx * s, loc[1], loc[2] + dz * s))
-        o = bpy.context.object; o.scale = (sx * s, 0.17 * s, sz * s)
+        o = bpy.context.object; o.scale = (sx * s, (0.17 if sx < 0.5 else 0.2) * s, sz * s)
         bv = o.modifiers.new('bevel', 'BEVEL'); bv.width = 0.04 * s; bv.segments = 4
         o.data.materials.append(wood); parts.append(o)
     return parts
@@ -206,7 +207,7 @@ def peak(y, col):
     o = bpy.data.objects.new('golgotha', me); sc.collection.objects.link(o); o.location.y = y
     so = o.modifiers.new('thick', 'SOLIDIFY'); so.thickness = 0.3; so.offset = 0
     bv = o.modifiers.new('bevel', 'BEVEL'); bv.width = 0.12; bv.segments = 4; bv.limit_method = 'ANGLE'
-    o.data.materials.append(felt('golgotha', col)); return o
+    o.data.materials.append(felt('golgotha', col)); o.visible_shadow = False; return o
 
 def fog_box(density=0.02):
     bpy.ops.mesh.primitive_cube_add(location=(0, 14, 7)); b = bpy.context.object; b.name = 'fog'; b.scale = (26, 26, 11)

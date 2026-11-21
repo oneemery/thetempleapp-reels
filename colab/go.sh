@@ -20,7 +20,8 @@ case "$MODE" in
     python plates.py /content/temple/live/cross-part3/p 2>&1 | grep --line-buffered -E "plate|PLATES|Error|Traceback"
     python -c "import playwright" 2>/dev/null || pip -q install playwright
     python -m playwright install --with-deps chromium > /dev/null 2>&1
-    python final3d.py ;;
+    python final3d.py
+    if [ -d /content/drive/MyDrive ]; then mkdir -p "/content/drive/MyDrive/Temple Reels" && cp /content/out/Temple_Cross_Part3_3D.mp4 "/content/drive/MyDrive/Temple Reels/" && echo COPIED_TO_DRIVE; fi ;;
   all)  # render every shot, then composite
     for S in golgotha walls rise; do python temple3d.py $S ${1:-cycles} 2>&1 | grep --line-buffered -E "frame [0-9]*00 |AVG|Error|Traceback"; done
     pip -q install playwright && python -m playwright install --with-deps chromium > /dev/null 2>&1
