@@ -2,11 +2,13 @@
 # Temple Colab runner.  usage: curl -sL .../go.sh | bash -s <mode> [args]
 set -e
 MODE=$1; shift || true
-if [ ! -d /content/temple ] || [ "$MODE" = "update" ] || [ "$MODE" = "speed" ]; then
-  rm -rf /content/repo /content/temple
+if [ -d /content/repo/.git ]; then
+  (cd /content/repo && git pull -q)
+else
   git clone -q --depth 1 --filter=blob:none --sparse https://github.com/oneemery/thetempleapp-reels /content/repo
-  (cd /content/repo && git sparse-checkout set colab) && cp -r /content/repo/colab /content/temple
+  (cd /content/repo && git sparse-checkout set colab)
 fi
+rm -rf /content/temple && cp -r /content/repo/colab /content/temple
 python -c "import bpy" 2>/dev/null || pip -q install bpy==5.3.0
 cd /content/temple
 case "$MODE" in
